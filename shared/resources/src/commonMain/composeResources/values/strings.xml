@@ -165,7 +165,12 @@
     <string name="action_paste_url">Paste URL</string>
     <string name="action_browse_open_food_facts">Browse Open Food Facts</string>
     <string name="action_copy">Copy</string>
+    <string name="action_copy_meal">Copy meal</string>
     <string name="action_choose_other_date">Choose other date</string>
+    <string name="headline_copy_meal">Copy meal</string>
+    <string name="description_copy_meal_pick_date">Select the day you want to copy from.</string>
+    <string name="description_copy_meal_preview">These items will be added to %1$s.</string>
+    <string name="description_copy_meal_empty">No items found for this meal on the selected day.</string>
     <string name="action_show_more" description="Show more settings/options/advanced settings">Show more</string>
     <string name="action_download_product">Download product</string>
     <string name="action_copy_and_open_bug_report">Copy and open bug report</string>

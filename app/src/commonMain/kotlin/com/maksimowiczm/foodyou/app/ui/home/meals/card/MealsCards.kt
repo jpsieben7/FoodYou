@@ -21,15 +21,28 @@ internal fun MealsCards(
     val viewModel: MealsCardsViewModel = koinViewModel()
     val diaryMeals = viewModel.diaryMeals.collectAsStateWithLifecycle().value
     val layout by viewModel.layout.collectAsStateWithLifecycle()
+    val copyMealDialogState by viewModel.copyMealDialogState.collectAsStateWithLifecycle()
 
     LaunchedEffect(homeState.selectedDate, viewModel) { viewModel.setDate(homeState.selectedDate) }
+
+    copyMealDialogState?.let { state ->
+        CopyMealDialog(
+            state = state,
+            onDismiss = viewModel::onDismissCopyMealDialog,
+            onSourceDateSelected = viewModel::onCopyMealSourceDateSelected,
+            onChangeSourceDate = viewModel::onCopyMealChangeSourceDate,
+            onConfirm = viewModel::onConfirmCopyMeal,
+        )
+    }
 
     when (layout) {
         MealsCardsLayout.Horizontal ->
             HorizontalMealsCards(
                 meals = diaryMeals,
+                targetDate = homeState.selectedDate,
                 onAdd = { mealId -> onAdd(homeState.selectedDate.toEpochDays(), mealId) },
                 onQuickAdd = { mealId -> onQuickAdd(homeState.selectedDate.toEpochDays(), mealId) },
+                onCopyMeal = viewModel::onCopyMealClick,
                 onEditEntry = { model ->
                     val foodEntry = model as? FoodMealEntryModel
                     val manualEntry = model as? ManualMealEntryModel
@@ -45,8 +58,10 @@ internal fun MealsCards(
         MealsCardsLayout.Vertical ->
             VerticalMealsCards(
                 meals = diaryMeals,
+                targetDate = homeState.selectedDate,
                 onAdd = { mealId -> onAdd(homeState.selectedDate.toEpochDays(), mealId) },
                 onQuickAdd = { mealId -> onQuickAdd(homeState.selectedDate.toEpochDays(), mealId) },
+                onCopyMeal = viewModel::onCopyMealClick,
                 onEditEntry = { model ->
                     val foodEntry = model as? FoodMealEntryModel
                     val manualEntry = model as? ManualMealEntryModel

@@ -11,16 +11,19 @@ import com.maksimowiczm.foodyou.fooddiary.domain.entity.ManualDiaryEntry
 import com.maksimowiczm.foodyou.fooddiary.domain.entity.MealsPreferences
 import com.maksimowiczm.foodyou.fooddiary.domain.repository.FoodDiaryEntryRepository
 import com.maksimowiczm.foodyou.fooddiary.domain.repository.ManualDiaryEntryRepository
+import com.maksimowiczm.foodyou.fooddiary.domain.usecase.CopyMealFromDateUseCase
 import com.maksimowiczm.foodyou.fooddiary.domain.usecase.ObserveDiaryMealsUseCase
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
@@ -29,9 +32,13 @@ internal class MealsCardsViewModel(
     private val observeDiaryMealsUseCase: ObserveDiaryMealsUseCase,
     private val foodEntryRepository: FoodDiaryEntryRepository,
     private val manualEntryRepository: ManualDiaryEntryRepository,
+    private val copyMealFromDateUseCase: CopyMealFromDateUseCase,
     mealsPreferencesRepository: UserPreferencesRepository<MealsPreferences>,
 ) : ViewModel() {
     private val dateState = MutableStateFlow<LocalDate?>(null)
+
+    private val _copyMealDialogState = MutableStateFlow<CopyMealDialogState?>(null)
+    val copyMealDialogState: StateFlow<CopyMealDialogState?> = _copyMealDialogState.asStateFlow()
 
     val diaryMeals: StateFlow<List<MealModel>?> =
         dateState
@@ -63,6 +70,67 @@ internal class MealsCardsViewModel(
                 is ManualMealEntryModel -> manualEntryRepository.delete(model.id)
             }
         }
+    }
+
+    fun onCopyMealClick(meal: MealModel, targetDate: LocalDate) {
+        _copyMealDialogState.value =
+            CopyMealDialogState(
+                mealId = meal.id,
+                mealName = meal.name,
+                targetDate = targetDate,
+                step = CopyMealDialogStep.PickDate,
+            )
+    }
+
+    fun onDismissCopyMealDialog() {
+        _copyMealDialogState.value = null
+    }
+
+    fun onCopyMealSourceDateSelected(sourceDate: LocalDate) {
+        val dialogState = _copyMealDialogState.value ?: return
+
+        viewModelScope.launch {
+            val entries = loadMealEntries(mealId = dialogState.mealId, date = sourceDate)
+            _copyMealDialogState.value =
+                dialogState.copy(
+                    step =
+                        CopyMealDialogStep.Preview(
+                            sourceDate = sourceDate,
+                            entries = entries,
+                            isCopying = false,
+                        ),
+                )
+        }
+    }
+
+    fun onCopyMealChangeSourceDate() {
+        _copyMealDialogState.update { state ->
+            state?.copy(step = CopyMealDialogStep.PickDate)
+        }
+    }
+
+    fun onConfirmCopyMeal() {
+        val dialogState = _copyMealDialogState.value ?: return
+        val preview = dialogState.step as? CopyMealDialogStep.Preview ?: return
+        if (preview.entries.isEmpty() || preview.isCopying) return
+
+        viewModelScope.launch {
+            _copyMealDialogState.value = dialogState.copy(step = preview.copy(isCopying = true))
+
+            copyMealFromDateUseCase.copy(
+                mealId = dialogState.mealId,
+                sourceDate = preview.sourceDate,
+                targetDate = dialogState.targetDate,
+            )
+
+            _copyMealDialogState.value = null
+        }
+    }
+
+    private suspend fun loadMealEntries(mealId: Long, date: LocalDate): List<MealEntryModel> {
+        val foodEntries = foodEntryRepository.observeAll(mealId = mealId, date = date).first()
+        val manualEntries = manualEntryRepository.observeAll(mealId = mealId, date = date).first()
+        return (foodEntries + manualEntries).sortedBy { it.name }.map { it.toMealEntryModel() }
     }
 }
 

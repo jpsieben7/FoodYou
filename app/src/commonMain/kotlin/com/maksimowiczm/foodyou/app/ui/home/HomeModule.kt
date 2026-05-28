@@ -17,6 +17,7 @@ fun Module.home() {
             observeDiaryMealsUseCase = get(),
             foodEntryRepository = get(),
             manualEntryRepository = get(),
+            copyMealFromDateUseCase = get(),
             mealsPreferencesRepository = userPreferencesRepository(),
         )
     }

@@ -1,0 +1,7 @@
+{
+  "java.import.gradle.enabled": false,
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.gradle/**": true
+  }
+}

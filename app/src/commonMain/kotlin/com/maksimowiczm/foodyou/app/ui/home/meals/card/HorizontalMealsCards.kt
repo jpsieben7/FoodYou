@@ -17,13 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.valentinilk.shimmer.Shimmer
+import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 internal fun HorizontalMealsCards(
     meals: List<MealModel>?,
+    targetDate: LocalDate,
     onAdd: (mealId: Long) -> Unit,
     onQuickAdd: (mealId: Long) -> Unit,
+    onCopyMeal: (meal: MealModel, targetDate: LocalDate) -> Unit,
     onEditEntry: (MealEntryModel) -> Unit,
     onDeleteEntry: (MealEntryModel) -> Unit,
     onLongClick: (mealId: Long) -> Unit,
@@ -65,6 +68,7 @@ internal fun HorizontalMealsCards(
                     meal = meal,
                     onAddFood = { onAdd(meal.id) },
                     onQuickAdd = { onQuickAdd(meal.id) },
+                    onCopyMeal = { onCopyMeal(meal, targetDate) },
                     onEditEntry = onEditEntry,
                     onDeleteEntry = onDeleteEntry,
                     onLongClick = { onLongClick(meal.id) },
